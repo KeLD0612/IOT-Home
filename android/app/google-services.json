@@ -1,51 +1,27 @@
 {
   "project_info": {
-    "project_number": "1024906096119",
-    "project_id": "iot-smart-home-3589f",
-    "storage_bucket": "iot-smart-home-3589f.firebasestorage.app"
+    "project_number": "299401561487",
+    "firebase_url": "https://iot-home-ea3ce-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "iot-home-ea3ce",
+    "storage_bucket": "iot-home-ea3ce.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1024906096119:android:98f4d8449aa0cfa10f92f2",
+        "mobilesdk_app_id": "1:299401561487:android:618708baf2057cc171f7fa",
         "android_client_info": {
           "package_name": "com.example.version3"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "1024906096119-m8gignagmk1id4q3qth9r29ormfveumh.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.version3",
-            "certificate_hash": "886d45740281aac0ef80167af9f7c02d5e180dfb"
-          }
-        },
-        {
-          "client_id": "1024906096119-3p12ic691fcpijbcd3s11desus8ajvue.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB_iBHiD3O-NC96s4Wy1mQ78L8hguG_o0U"
+          "current_key": "AIzaSyAUVmmxrLa16lKbn4fRu06nffCv6O6N7hk"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1024906096119-3p12ic691fcpijbcd3s11desus8ajvue.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "1024906096119-h4374lkmrgjdovlgmke6t2qr79ltrdom.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.version3"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
