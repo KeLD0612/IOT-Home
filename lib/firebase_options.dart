@@ -41,50 +41,55 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAYxPNmY7tlabmbnQeLZVyBpzjvMliovRM',
-    appId: '1:1024906096119:web:25a32deb41ac0ceb0f92f2',
-    messagingSenderId: '1024906096119',
-    projectId: 'iot-smart-home-3589f',
-    authDomain: 'iot-smart-home-3589f.firebaseapp.com',
-    storageBucket: 'iot-smart-home-3589f.firebasestorage.app',
+    apiKey: 'AIzaSyDCZyLJe31McIW95xRiwzU3a1coio5C0pg',
+    appId: '1:299401561487:web:1b12aad27e75057171f7fa',
+    messagingSenderId: '299401561487',
+    projectId: 'iot-home-ea3ce',
+    authDomain: 'iot-home-ea3ce.firebaseapp.com',
+    databaseURL: 'https://iot-home-ea3ce-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'iot-home-ea3ce.firebasestorage.app',
+    measurementId: 'G-4MTRQC7JSL',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB_iBHiD3O-NC96s4Wy1mQ78L8hguG_o0U',
-    appId: '1:1024906096119:android:98f4d8449aa0cfa10f92f2',
-    messagingSenderId: '1024906096119',
-    projectId: 'iot-smart-home-3589f',
-    storageBucket: 'iot-smart-home-3589f.firebasestorage.app',
+    apiKey: 'AIzaSyAUVmmxrLa16lKbn4fRu06nffCv6O6N7hk',
+    appId: '1:299401561487:android:618708baf2057cc171f7fa',
+    messagingSenderId: '299401561487',
+    projectId: 'iot-home-ea3ce',
+    databaseURL: 'https://iot-home-ea3ce-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'iot-home-ea3ce.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDKcaMos5gCC-jcRUKZSZd1RlSZGoWsFOg',
-    appId: '1:1024906096119:ios:0f460a879e47b01b0f92f2',
-    messagingSenderId: '1024906096119',
-    projectId: 'iot-smart-home-3589f',
-    storageBucket: 'iot-smart-home-3589f.firebasestorage.app',
-    androidClientId: '1024906096119-m8gignagmk1id4q3qth9r29ormfveumh.apps.googleusercontent.com',
-    iosClientId: '1024906096119-h4374lkmrgjdovlgmke6t2qr79ltrdom.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCPf_O4oxI_17LWpyiE3nWsZD9qBpvcAK0',
+    appId: '1:299401561487:ios:dcc701e7a4d6737571f7fa',
+    messagingSenderId: '299401561487',
+    projectId: 'iot-home-ea3ce',
+    databaseURL: 'https://iot-home-ea3ce-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'iot-home-ea3ce.firebasestorage.app',
+    iosClientId: '299401561487-vckvq731ai22a98cg5gs4g638jjbdmjj.apps.googleusercontent.com',
     iosBundleId: 'com.example.version3',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDKcaMos5gCC-jcRUKZSZd1RlSZGoWsFOg',
-    appId: '1:1024906096119:ios:0f460a879e47b01b0f92f2',
-    messagingSenderId: '1024906096119',
-    projectId: 'iot-smart-home-3589f',
-    storageBucket: 'iot-smart-home-3589f.firebasestorage.app',
-    androidClientId: '1024906096119-m8gignagmk1id4q3qth9r29ormfveumh.apps.googleusercontent.com',
-    iosClientId: '1024906096119-h4374lkmrgjdovlgmke6t2qr79ltrdom.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCPf_O4oxI_17LWpyiE3nWsZD9qBpvcAK0',
+    appId: '1:299401561487:ios:dcc701e7a4d6737571f7fa',
+    messagingSenderId: '299401561487',
+    projectId: 'iot-home-ea3ce',
+    databaseURL: 'https://iot-home-ea3ce-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'iot-home-ea3ce.firebasestorage.app',
+    iosClientId: '299401561487-vckvq731ai22a98cg5gs4g638jjbdmjj.apps.googleusercontent.com',
     iosBundleId: 'com.example.version3',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAYxPNmY7tlabmbnQeLZVyBpzjvMliovRM',
-    appId: '1:1024906096119:web:341de68f4d2fd2710f92f2',
-    messagingSenderId: '1024906096119',
-    projectId: 'iot-smart-home-3589f',
-    authDomain: 'iot-smart-home-3589f.firebaseapp.com',
-    storageBucket: 'iot-smart-home-3589f.firebasestorage.app',
+    apiKey: 'AIzaSyDCZyLJe31McIW95xRiwzU3a1coio5C0pg',
+    appId: '1:299401561487:web:73e05a6914c3cee671f7fa',
+    messagingSenderId: '299401561487',
+    projectId: 'iot-home-ea3ce',
+    authDomain: 'iot-home-ea3ce.firebaseapp.com',
+    databaseURL: 'https://iot-home-ea3ce-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'iot-home-ea3ce.firebasestorage.app',
+    measurementId: 'G-C7YT18RE01',
   );
 }

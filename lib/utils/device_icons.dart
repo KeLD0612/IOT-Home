@@ -10,8 +10,8 @@ class DeviceIcons {
         return Icons.lightbulb;
       case 'light_yard':
         return Icons.light;
-      case 'mist_maker':
-        return Icons.cloud;
+      case 'ionizer':
+        return Icons.air;
       case 'roof_servo':
         return Icons.roofing;
       case 'gate_servo':

@@ -1,29 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/sensor_provider.dart';
-import '../../providers/device_provider.dart';
-import '../../models/user_sensor.dart';
-import '../../models/device_model.dart';
 import '../../config/app_colors.dart';
-import '../../widgets/sensor_avatar.dart';
-import 'add_sensor_screen.dart';
+import 'widgets/temperature_card.dart';
+import 'widgets/humidity_card.dart';
+import 'widgets/sensor_gauge.dart';
 
 class SensorsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cảm biến'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        title: Text('Cảm biến'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _navigateToAddSensor(context),
-            tooltip: 'Thêm cảm biến',
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
+            icon: Icon(Icons.history),
             onPressed: () => Navigator.pushNamed(context, '/history'),
             tooltip: 'Lịch sử',
           ),
@@ -31,25 +22,218 @@ class SensorsScreen extends StatelessWidget {
       ),
       body: Consumer<SensorProvider>(
         builder: (context, sensorProvider, _) {
-          final userSensors = sensorProvider.userSensors;
-
-          if (userSensors.isEmpty) {
-            return _buildEmptyState(context);
-          }
+          final data = sensorProvider.currentData;
 
           return RefreshIndicator(
             onRefresh: () async {
-              await Future.delayed(const Duration(seconds: 1));
+              await Future.delayed(Duration(seconds: 1));
             },
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               children: [
-                // Weather sensors section
-                _buildWeatherSensorsSection(context, sensorProvider),
-                const SizedBox(height: 24),
+                // Temperature & Humidity Cards
+                Row(
+                  children: [
+                    Expanded(
+                      child: TemperatureCard(
+                        temperature: data.temperature,
+                        onTap: () => _navigateToDetail(context, 'temperature'),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: HumidityCard(
+                        humidity: data.humidity,
+                        onTap: () => _navigateToDetail(context, 'temperature'),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
 
-                // All sensors section
-                _buildAllSensorsSection(context, sensorProvider),
+                // Sensor Gauges
+                Row(
+                  children: [
+                    Expanded(
+                      child: SensorGauge(
+                        label: 'Ánh sáng',
+                        value: data.light.toDouble(),
+                        minValue: 0,
+                        maxValue: 1000,
+                        unit: 'lux',
+                        color: AppColors.light,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: SensorGauge(
+                        label: 'Độ ẩm đất',
+                        value: data.soilMoisture.toDouble(),
+                        minValue: 0,
+                        maxValue: 100,
+                        unit: '%',
+                        color: AppColors.soil,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+
+                // Rain & Light
+                _buildSensorCard(
+                  context,
+                  title: 'Mưa & Ánh sáng',
+                  icon: Icons.wb_sunny,
+                  color: AppColors.light,
+                  children: [
+                    _buildSensorItem(
+                      '🌧️ Cảm biến mưa',
+                      data.rain == 1 ? 'Có mưa' : 'Không mưa',
+                      data.rain == 1 ? AppColors.rain : Colors.grey,
+                    ),
+                    Divider(),
+                    _buildSensorItem(
+                      '☀️ Ánh sáng',
+                      '${data.light} lux',
+                      AppColors.light,
+                    ),
+                  ],
+                  onTap: () => _navigateToDetail(context, 'light'),
+                ),
+                SizedBox(height: 16),
+
+                // Soil Moisture
+                _buildSensorCard(
+                  context,
+                  title: 'Độ ẩm đất',
+                  icon: Icons.grass,
+                  color: AppColors.soil,
+                  children: [
+                    _buildSensorItem(
+                      '🌱 Độ ẩm đất',
+                      '${data.soilMoisture}%',
+                      AppColors.soil,
+                    ),
+                    SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: data.soilMoisture / 100,
+                      backgroundColor: Colors.grey[200],
+                      color: AppColors.soil,
+                    ),
+                  ],
+                  onTap: () => _navigateToDetail(context, 'soil'),
+                ),
+                SizedBox(height: 16),
+
+                // Gas
+                _buildSensorCard(
+                  context,
+                  title: 'Khí Gas',
+                  icon: Icons.air,
+                  color: AppColors.gas,
+                  children: [
+                    _buildSensorItem(
+                      '⚠️ Nồng độ Gas',
+                      '${data.gas} ppm',
+                      data.gas > 1500 ? AppColors.error : AppColors.gas,
+                    ),
+                    if (data.gas > 1500) ...[
+                      SizedBox(height: 8),
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning,
+                              color: AppColors.error,
+                              size: 16,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Cảnh báo: Nồng độ gas cao!',
+                                style: TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                  onTap: () => Navigator.pushNamed(context, '/gas_monitor'),
+                ),
+                SizedBox(height: 16),
+
+                // Dust
+                _buildSensorCard(
+                  context,
+                  title: 'Bụi mịn',
+                  icon: Icons.cloud,
+                  color: AppColors.dust,
+                  children: [
+                    _buildSensorItem(
+                      '🫁 Bụi PM2.5',
+                      '${data.dust} µg/m³',
+                      data.dust > 150 ? AppColors.error : AppColors.dust,
+                    ),
+                    if (data.dust > 150) ...[
+                      SizedBox(height: 8),
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning,
+                              color: AppColors.error,
+                              size: 16,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Cảnh báo: Nồng độ bụi cao!',
+                                style: TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                  onTap: () => Navigator.pushNamed(context, '/dust_chart'),
+                ),
+                SizedBox(height: 16),
+
+                // Motion
+                _buildSensorCard(
+                  context,
+                  title: 'Cảm biến chuyển động',
+                  icon: Icons.directions_walk,
+                  color: AppColors.motion,
+                  children: [
+                    _buildSensorItem(
+                      '🚶 Trạng thái',
+                      data.motionDetected
+                          ? 'Phát hiện chuyển động'
+                          : 'Không có chuyển động',
+                      data.motionDetected ? AppColors.warning : Colors.grey,
+                    ),
+                  ],
+                  onTap: () => _navigateToDetail(context, 'motion'),
+                ),
               ],
             ),
           );
@@ -58,188 +242,51 @@ class SensorsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.sensors_off, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'Chưa có cảm biến nào',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Thêm cảm biến để bắt đầu theo dõi',
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _navigateToAddSensor(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Thêm cảm biến đầu tiên'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeatherSensorsSection(
-    BuildContext context,
-    SensorProvider sensorProvider,
-  ) {
-    final weatherSensors = sensorProvider.userSensors
-        .where((s) => s.isWeatherSensor && s.isActive)
-        .toList();
-
-    if (weatherSensors.isEmpty) {
-      return Container();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.wb_sunny, color: Colors.orange),
-            const SizedBox(width: 8),
-            const Text(
-              'Cảm biến thời tiết',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const Spacer(),
-            if (sensorProvider.hasWeatherSensors())
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Đầy đủ',
-                  style: TextStyle(
-                    color: Colors.green[800],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: weatherSensors.length,
-          itemBuilder: (context, index) {
-            return _buildSensorCard(context, weatherSensors[index]);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAllSensorsSection(
-    BuildContext context,
-    SensorProvider sensorProvider,
-  ) {
-    final allSensors = sensorProvider.userSensors
-        .where((s) => s.isActive)
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Row(
-          children: [
-            Icon(Icons.sensors, color: Colors.blue),
-            SizedBox(width: 8),
-            Text(
-              'Tất cả cảm biến',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: allSensors.length,
-          itemBuilder: (context, index) {
-            return _buildSensorListItem(
-              context,
-              allSensors[index],
-              sensorProvider,
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSensorCard(BuildContext context, UserSensor sensor) {
+  Widget _buildSensorCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<Widget> children,
+    VoidCallback? onTap,
+  }) {
     return Card(
       elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
-        onTap: () => _showSensorOptions(context, sensor),
-        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  SensorAvatar(
-                    icon: sensor.icon,
-                    avatarPath: sensor.avatarPath,
-                    size: 40,
-                    isActive: true, // Sensor luôn active khi hiển thị
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: color, size: 24),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      sensor.displayName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (onTap != null)
+                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                 ],
               ),
-              const Spacer(),
-              Text(
-                sensor.formattedValue,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              if (sensor.lastUpdateAt != null)
-                Text(
-                  'Cập nhật: ${_formatLastUpdate(sensor.lastUpdateAt!)}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                ),
+              SizedBox(height: 16),
+              ...children,
             ],
           ),
         ),
@@ -247,407 +294,24 @@ class SensorsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSensorListItem(
-    BuildContext context,
-    UserSensor sensor,
-    SensorProvider sensorProvider,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: SensorAvatar(
-              icon: sensor.icon,
-              avatarPath: sensor.avatarPath,
-              size: 30,
-              isActive: true,
-            ),
+  Widget _buildSensorItem(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
-        title: Text(sensor.displayName),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Topic: ${sensor.mqttTopic}'),
-            if (sensor.lastUpdateAt != null)
-              Text(
-                'Cập nhật: ${_formatLastUpdate(sensor.lastUpdateAt!)}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              sensor.formattedValue,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(width: 8),
-            PopupMenuButton<String>(
-              onSelected: (value) =>
-                  _handleSensorAction(context, sensor, value, sensorProvider),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'check_connection',
-                  child: Row(
-                    children: [
-                      Icon(Icons.wifi_find, size: 16, color: Colors.blue),
-                      SizedBox(width: 8),
-                      Text('Kiểm tra kết nối'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit, size: 16),
-                      SizedBox(width: 8),
-                      Text('Chỉnh sửa'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, size: 16, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Xóa', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        onTap: () => _showSensorOptions(context, sensor),
-      ),
+      ],
     );
   }
 
-  String _formatLastUpdate(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-
-    if (diff.inMinutes < 1) {
-      return 'Vừa xong';
-    } else if (diff.inHours < 1) {
-      return '${diff.inMinutes} phút trước';
-    } else if (diff.inDays < 1) {
-      return '${diff.inHours} giờ trước';
-    } else {
-      return '${diff.inDays} ngày trước';
-    }
-  }
-
-  Future<void> _navigateToAddSensor(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddSensorScreen()),
-    );
-
-    // Refresh nếu đã thêm sensor
-    if (result == true && context.mounted) {
-      final sensorProvider = Provider.of<SensorProvider>(
-        context,
-        listen: false,
-      );
-      // Reload user sensors
-      if (sensorProvider.userSensors.isNotEmpty) {
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-    }
-  }
-
-  void _showSensorOptions(BuildContext context, UserSensor sensor) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                SensorAvatar(
-                  icon: sensor.icon,
-                  avatarPath: sensor.avatarPath,
-                  size: 40,
-                  isActive: true,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        sensor.displayName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        sensor.sensorType?.name ?? '',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _editSensor(context, sensor);
-                    },
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Chỉnh sửa'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _confirmDeleteSensor(context, sensor);
-                    },
-                    icon: const Icon(Icons.delete),
-                    label: const Text('Xóa'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _editSensor(BuildContext context, UserSensor sensor) async {
-    final result = await Navigator.pushNamed(
-      context,
-      '/edit_sensor',
-      arguments: sensor,
-    );
-
-    // Provider sẽ tự update UI khi có thay đổi
-    if (result == true) {
-      // Có thể thêm snackbar thông báo ở đây nếu cần
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Đã cập nhật cảm biến'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  void _handleSensorAction(
-    BuildContext context,
-    UserSensor sensor,
-    String action,
-    SensorProvider sensorProvider,
-  ) {
-    switch (action) {
-      case 'check_connection':
-        _checkSensorMqttConnection(context, sensor);
-        break;
-      case 'edit':
-        // TODO: Implement edit sensor
-        break;
-      case 'delete':
-        _confirmDeleteSensor(context, sensor);
-        break;
-    }
-  }
-
-  void _confirmDeleteSensor(BuildContext context, UserSensor sensor) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc muốn xóa cảm biến "${sensor.displayName}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _deleteSensor(context, sensor);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _checkSensorMqttConnection(
-    BuildContext context,
-    UserSensor sensor,
-  ) async {
-    // Hiển thị dialog loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Đang kiểm tra kết nối MQTT...'),
-          ],
-        ),
-      ),
-    );
-
-    try {
-      // Cần tạo Device object tạm thời từ sensor để sử dụng checkMqttConnection
-      // Vì DeviceProvider.checkMqttConnection nhận Device parameter
-      final tempDevice = Device(
-        id: sensor.id,
-        name: sensor.displayName,
-        room: 'sensor_check',
-        type: DeviceType.relay,
-        icon: sensor.icon,
-        state: false,
-        keyName: sensor.id,
-        deviceCode: sensor.deviceCode,
-        mqttConfig: sensor.mqttConfig,
-      );
-
-      final deviceProvider = Provider.of<DeviceProvider>(
-        context,
-        listen: false,
-      );
-
-      bool isConnected = await deviceProvider.checkMqttConnection(tempDevice);
-
-      if (context.mounted) {
-        Navigator.pop(context); // Đóng loading dialog
-
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(
-                  isConnected ? Icons.check_circle : Icons.error,
-                  color: isConnected ? Colors.green : Colors.red,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    isConnected ? 'Kết nối thành công' : 'Kết nối thất bại',
-                    style: TextStyle(
-                      color: isConnected ? Colors.green[800] : Colors.red[800],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isConnected
-                      ? 'Cảm biến "${sensor.displayName}" đang kết nối bình thường!'
-                      : 'Không thể kết nối với cảm biến "${sensor.displayName}".',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                if (!isConnected) ...[
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Vui lòng kiểm tra:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('• ESP32 đã bật và kết nối WiFi'),
-                  const Text('• Cấu hình MQTT broker đúng'),
-                  const Text('• Mã cảm biến (deviceCode) khớp với ESP32'),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                style: TextButton.styleFrom(
-                  foregroundColor: isConnected
-                      ? Colors.green
-                      : Colors.grey[600],
-                ),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context); // Đóng loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Lỗi kiểm tra kết nối: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteSensor(BuildContext context, UserSensor sensor) async {
-    try {
-      final sensorProvider = Provider.of<SensorProvider>(
-        context,
-        listen: false,
-      );
-      await sensorProvider.deleteSensor(sensor.id);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Đã xóa cảm biến "${sensor.displayName}"'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
+  void _navigateToDetail(BuildContext context, String sensorType) {
+    Navigator.pushNamed(context, '/sensor_detail', arguments: sensorType);
   }
 }

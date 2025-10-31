@@ -30,7 +30,7 @@ class AppColors {
   // Device Colors
   static const Color pumpColor = Color(0xFF00BCD4);
   static const Color lightColor = Color(0xFFFFEB3B);
-  static const Color mistMakerColor = Color(0xFF00BCD4); // Cyan for mist
+  static const Color ionizerColor = Color(0xFF9C27B0);
   static const Color servoColor = Color(0xFF607D8B);
 
   // Gradient Colors
@@ -113,8 +113,8 @@ class AppColors {
       case 'light_living':
       case 'light_yard':
         return lightColor;
-      case 'mist_maker':
-        return mistMakerColor;
+      case 'ionizer':
+        return ionizerColor;
       case 'roof_servo':
       case 'gate_servo':
         return servoColor;

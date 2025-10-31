@@ -68,6 +68,7 @@ class _VoiceControlButtonState extends State<VoiceControlButton>
 
         final isListening = voiceController.isListening;
         final isProcessing = voiceController.isProcessing;
+        // ignore: unused_local_variable
         final isBusy = voiceController.isBusy;
 
         return Column(

@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import '../config/mqtt_config.dart';
 import '../config/constants.dart';
-import '../models/mqtt_config.dart' as custom;
 
 class MqttService {
   late MqttServerClient client;
@@ -31,24 +31,25 @@ class MqttService {
     }
   }
 
-  Future<bool> connect(custom.MqttConfig config) async {
+  Future<bool> connect() async {
     try {
-      // Tạo client với unique ID
-      final uniqueId = _generateUniqueClientId();
-      client = MqttServerClient.withPort(config.broker, uniqueId, config.port);
+      // Create client
+      client = MqttServerClient.withPort(
+        MqttConfig.broker,
+        '${MqttConfig.clientId}_${DateTime.now().millisecondsSinceEpoch}',
+        MqttConfig.port,
+      );
 
       // Configure client
       client.logging(on: false);
-      client.keepAlivePeriod = 30; // 30 seconds
-      client.connectTimeoutPeriod = 10 * 1000; // 10 seconds
+      client.keepAlivePeriod = MqttConfig.keepAlivePeriod;
+      client.connectTimeoutPeriod = MqttConfig.connectionTimeout * 1000;
       client.autoReconnect = true;
       client.resubscribeOnAutoReconnect = true;
 
       // SSL/TLS
-      client.secure = config.useSsl;
-      if (config.useSsl) {
-        client.securityContext = SecurityContext.defaultContext;
-      }
+      client.secure = true;
+      client.securityContext = SecurityContext.defaultContext;
 
       // Set protocol
       client.setProtocolV311();
@@ -62,18 +63,20 @@ class MqttService {
 
       // Connection message with Last Will Testament
       final connMessage = MqttConnectMessage()
-          .authenticateAs(config.username, config.password)
+          .authenticateAs(MqttConfig.username, MqttConfig.password)
           .withWillTopic('${MqttTopics.base}/status/app_online')
           .withWillMessage('offline')
           .withWillQos(MqttQos.atLeastOnce)
           .withWillRetain()
           .startClean()
-          .keepAliveFor(30); // 30 seconds
+          .keepAliveFor(MqttConfig.keepAlivePeriod);
 
       client.connectionMessage = connMessage;
 
       // Connect
-      print('🔄 MQTT: Connecting to ${config.broker}:${config.port}...');
+      print(
+        '🔄 MQTT: Connecting to ${MqttConfig.broker}:${MqttConfig.port}...',
+      );
       await client.connect();
 
       if (client.connectionStatus?.state == MqttConnectionState.connected) {
@@ -233,12 +236,5 @@ class MqttService {
         print('🔚 MQTT Stream Done');
       },
     );
-  }
-
-  /// Generate unique client ID
-  String _generateUniqueClientId() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final microseconds = DateTime.now().microsecond % 1000;
-    return 'flutter_smart_home_${timestamp}_$microseconds';
   }
 }

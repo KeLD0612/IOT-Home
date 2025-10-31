@@ -63,6 +63,20 @@ class _AddRoomScreenState extends State<AddRoomScreen> {
     return result;
   }
 
+  /// Generate unique device ID
+  String generateDeviceId() {
+    return 'device_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  /// Normalize device name to keyName
+  String normalizeDeviceName(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '_')
+        .replaceAll('_+', '_')
+        .trim();
+  }
+
   Future<void> _addRoomWithDevice() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -85,10 +99,9 @@ class _AddRoomScreenState extends State<AddRoomScreen> {
         type: DeviceType.relay,
         room: _roomNameController.text.trim(),
         icon: _selectedIcon,
-        createdAt: DateTime.now(),
       );
 
-      await deviceProvider.addDevice(device);
+      deviceProvider.addDevice(device);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

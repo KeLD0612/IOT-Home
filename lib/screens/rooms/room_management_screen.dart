@@ -426,11 +426,7 @@ class _RoomManagementScreenState extends State<RoomManagementScreen> {
     try {
       if (_isEditing) {
         // Sửa phòng (tên và avatar)
-        await deviceProvider.updateRoom(
-          _editingRoomId!,
-          roomName,
-          _selectedAvatar!,
-        );
+        await deviceProvider.updateRoom(_editingRoomId!, roomName);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

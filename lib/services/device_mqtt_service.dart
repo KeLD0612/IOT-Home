@@ -31,7 +31,7 @@ class DeviceMqttService {
       );
 
       // Tạo client với unique ID
-      final clientId = device.mqttClientId;
+      final clientId = device.mqttClientId ?? 'device_${device.id}';
       final client = MqttServerClient.withPort(
         config.broker,
         clientId,
@@ -242,7 +242,7 @@ class DeviceMqttService {
       );
       client = MqttServerClient.withPort(
         config.broker,
-        device.mqttClientId,
+        device.mqttClientId ?? 'device_${device.id}_pub',
         config.port,
       );
 
@@ -297,14 +297,15 @@ class DeviceMqttService {
         final builder = MqttClientPayloadBuilder();
         builder.addString(message);
 
+        final topic = device.finalMqttTopic ?? 'smarthome/device/${device.id}';
         client.publishMessage(
-          device.finalMqttTopic,
+          topic,
           MqttQos.atLeastOnce,
           builder.payload!,
           retain: retain,
         );
         print(
-          '📤 Device MQTT: Published to ${device.finalMqttTopic}: $message for device ${device.name}',
+          '📤 Device MQTT: Published to $topic: $message for device ${device.name}',
         );
         return true;
       } catch (e) {
@@ -337,7 +338,7 @@ class DeviceMqttService {
 
       client = MqttServerClient.withPort(
         config.broker,
-        device.mqttClientId,
+        device.mqttClientId ?? 'device_${device.id}_sub',
         config.port,
       );
 
@@ -426,7 +427,7 @@ class DeviceMqttService {
       );
       client = MqttServerClient.withPort(
         config.broker,
-        device.mqttClientId,
+        device.mqttClientId ?? 'device_${device.id}_custom',
         config.port,
       );
 

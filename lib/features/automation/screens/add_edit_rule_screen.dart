@@ -750,7 +750,7 @@ class _AddEditRuleScreenState extends State<AddEditRuleScreen> {
       enabled: _enabled,
       conditions: _conditions,
       startActions: _startActions,
-      endActions: _hasEndActions ? _endActions : null,
+      endActions: _hasEndActions ? _endActions : [],
       hasEndActions: _hasEndActions,
       createdAt: widget.rule?.createdAt ?? DateTime.now(),
       lastTriggered: widget.rule?.lastTriggered,

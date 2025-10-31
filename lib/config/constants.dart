@@ -15,7 +15,7 @@ class MqttTopics {
   static const String pump = '$base/controls/pump';
   static const String lightLiving = '$base/controls/light_living';
   static const String lightYard = '$base/controls/light_yard';
-  static const String mistMaker = '$base/controls/mist_maker';
+  static const String ionizer = '$base/controls/ionizer';
   static const String roofServo = '$base/controls/roof_servo';
   static const String gateServo = '$base/controls/gate_servo';
 
@@ -47,7 +47,7 @@ class DeviceNames {
   static const String pump = 'Máy bơm';
   static const String lightLiving = 'Đèn phòng khách';
   static const String lightYard = 'Đèn sân';
-  static const String mistMaker = 'Máy phun sương';
+  static const String ionizer = 'Máy phát ion';
   static const String roofServo = 'Cửa trần';
   static const String gateServo = 'Cửa cổng';
 }

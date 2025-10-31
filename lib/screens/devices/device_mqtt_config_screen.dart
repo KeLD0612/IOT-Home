@@ -168,7 +168,7 @@ class _DeviceMqttConfigScreenState extends State<DeviceMqttConfigScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -182,7 +182,10 @@ class _DeviceMqttConfigScreenState extends State<DeviceMqttConfigScreen> {
             ),
           ),
           Expanded(
-            child: Text(value, style: TextStyle(color: Colors.grey[700])),
+            child: Text(
+              value ?? 'N/A',
+              style: TextStyle(color: Colors.grey[700]),
+            ),
           ),
         ],
       ),
@@ -535,7 +538,7 @@ class _DeviceMqttConfigScreenState extends State<DeviceMqttConfigScreen> {
         context,
         listen: false,
       );
-      await deviceProvider.updateDevice(updatedDevice);
+      deviceProvider.updateDevice(widget.device.id, updatedDevice);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

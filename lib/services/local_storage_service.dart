@@ -23,17 +23,11 @@ class LocalStorageService {
   }
 
   // ════════════════════════════════════════════════════════
-  // SENSOR DATA HISTORY - WITH USER ISOLATION
+  // SENSOR DATA HISTORY
   // ════════════════════════════════════════════════════════
 
-  List<Map<String, dynamic>> getSensorHistory(
-    String sensorType, {
-    String? userId,
-  }) {
-    final key = userId != null
-        ? '${userId}_history_$sensorType'
-        : 'history_$sensorType';
-    final String? jsonString = _prefs.getString(key);
+  List<Map<String, dynamic>> getSensorHistory(String sensorType) {
+    final String? jsonString = _prefs.getString('history_$sensorType');
     if (jsonString == null) return [];
 
     try {
@@ -47,15 +41,11 @@ class LocalStorageService {
 
   Future<void> saveSensorHistory(
     String sensorType,
-    List<Map<String, dynamic>> history, {
-    String? userId,
-  }) async {
+    List<Map<String, dynamic>> history,
+  ) async {
     try {
-      final key = userId != null
-          ? '${userId}_history_$sensorType'
-          : 'history_$sensorType';
       final String jsonString = json.encode(history);
-      await _prefs.setString(key, jsonString);
+      await _prefs.setString('history_$sensorType', jsonString);
     } catch (e) {
       print('❌ Error saving sensor history: $e');
     }
@@ -67,14 +57,11 @@ class LocalStorageService {
   }
 
   // ════════════════════════════════════════════════════════
-  // AUTOMATION RULES - WITH USER ISOLATION
+  // AUTOMATION RULES
   // ════════════════════════════════════════════════════════
 
-  List<Map<String, dynamic>> getAutomationRules({String? userId}) {
-    final key = userId != null
-        ? '${userId}_automation_rules'
-        : 'automation_rules';
-    final String? jsonString = _prefs.getString(key);
+  List<Map<String, dynamic>> getAutomationRules() {
+    final String? jsonString = _prefs.getString('automation_rules');
     if (jsonString == null) return [];
 
     try {
@@ -86,19 +73,11 @@ class LocalStorageService {
     }
   }
 
-  Future<void> saveAutomationRules(
-    List<Map<String, dynamic>> rules, {
-    String? userId,
-  }) async {
+  Future<void> saveAutomationRules(List<Map<String, dynamic>> rules) async {
     try {
-      final key = userId != null
-          ? '${userId}_automation_rules'
-          : 'automation_rules';
       final String jsonString = json.encode(rules);
-      await _prefs.setString(key, jsonString);
-      print(
-        '💾 Saved ${rules.length} automation rules for user: ${userId ?? 'default'}',
-      );
+      await _prefs.setString('automation_rules', jsonString);
+      print('💾 Saved ${rules.length} automation rules');
     } catch (e) {
       print('❌ Error saving automation rules: $e');
     }
@@ -264,16 +243,16 @@ class LocalStorageService {
   }
 
   // ════════════════════════════════════════════════════════
-  // MQTT CONFIGURATION - WITH USER ISOLATION
+  // MQTT CONFIGURATION
   // ════════════════════════════════════════════════════════
 
   Map<String, dynamic>? getMqttConfig({String? userId}) {
-    final key = userId != null ? '${userId}_mqtt_config' : 'mqtt_config';
+    final key = userId != null ? 'mqtt_config_$userId' : 'mqtt_config';
     final String? jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
 
     try {
-      return json.decode(jsonString);
+      return json.decode(jsonString) as Map<String, dynamic>;
     } catch (e) {
       print('❌ Error loading MQTT config: $e');
       return null;
@@ -285,10 +264,10 @@ class LocalStorageService {
     String? userId,
   }) async {
     try {
-      final key = userId != null ? '${userId}_mqtt_config' : 'mqtt_config';
+      final key = userId != null ? 'mqtt_config_$userId' : 'mqtt_config';
       final String jsonString = json.encode(config);
       await _prefs.setString(key, jsonString);
-      print('💾 Saved MQTT config for user: ${userId ?? 'default'}');
+      print('💾 Saved MQTT config');
     } catch (e) {
       print('❌ Error saving MQTT config: $e');
     }

@@ -964,14 +964,14 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
         configuration['customIcon'] = _selectedIcon;
       }
 
-      await sensorProvider.addSensor(
-        sensorTypeId: _selectedSensorType!.id,
-        displayName: _displayNameController.text.trim(),
-        customMqttTopic: _mqttTopicController.text.trim(),
-        deviceCode: _deviceCodeController.text.trim(),
-        configuration: configuration,
-        mqttConfig: mqttConfig,
-      );
+      await sensorProvider.addSensor({
+        'sensorTypeId': _selectedSensorType!.id,
+        'displayName': _displayNameController.text.trim(),
+        'customMqttTopic': _mqttTopicController.text.trim(),
+        'deviceCode': _deviceCodeController.text.trim(),
+        'configuration': configuration,
+        'mqttConfig': mqttConfig,
+      });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
