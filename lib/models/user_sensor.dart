@@ -1,5 +1,6 @@
 import 'sensor_type.dart';
 import 'device_mqtt_config.dart';
+import 'sensor_health.dart';
 
 class UserSensor {
   final String id;
@@ -99,6 +100,15 @@ class UserSensor {
   /// Kiểm tra có phải weather sensor không
   bool get isWeatherSensor =>
       AvailableSensorTypes.isWeatherSensor(sensorTypeId);
+
+  /// 🩺 Lấy thông tin sức khỏe của sensor dựa trên giá trị hiện tại
+  HealthInfo get healthInfo {
+    return SensorHealthCalculator.calculateHealth(
+      sensorTypeId: sensorTypeId,
+      value: lastValue,
+      sensorType: sensorType,
+    );
+  }
 
   // 📡 MQTT Helper Getters
   bool get hasCustomMqttConfig => mqttConfig?.useCustomConfig == true;

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/sensor_provider.dart';
 
 /// Widget xây dựng điều kiện cho quy tắc tự động
 class ConditionBuilder extends StatefulWidget {
@@ -21,15 +23,7 @@ class _ConditionBuilderState extends State<ConditionBuilder> {
   String _operator = '>';
   double _value = 30;
 
-  final List<Map<String, String>> _sensors = [
-    {'id': 'temperature', 'name': 'Nhiệt độ'},
-    {'id': 'humidity', 'name': 'Độ ẩm'},
-    {'id': 'gas', 'name': 'Khí gas'},
-    {'id': 'dust', 'name': 'Bụi'},
-    {'id': 'light', 'name': 'Ánh sáng'},
-    {'id': 'soil', 'name': 'Độ ẩm đất'},
-    {'id': 'rain', 'name': 'Mưa'},
-  ];
+  List<Map<String, String>> _sensors = [];
 
   final List<Map<String, String>> _operators = [
     {'value': '>', 'label': 'Lớn hơn'},
@@ -42,15 +36,33 @@ class _ConditionBuilderState extends State<ConditionBuilder> {
   @override
   void initState() {
     super.initState();
+    _loadSensors();
     if (widget.initialCondition != null) {
       _noSensor = widget.initialCondition!['noSensor'] ?? false;
       _selectedSensor = widget.initialCondition!['sensor'] ?? 'temperature';
       _operator = widget.initialCondition!['operator'] ?? '>';
       _value = widget.initialCondition!['value']?.toDouble() ?? 30;
     }
+
+    // Ensure selected sensor exists in the list
+    if (_sensors.isNotEmpty && _selectedSensor != null) {
+      final sensorExists = _sensors.any((s) => s['id'] == _selectedSensor);
+      if (!sensorExists) {
+        _selectedSensor = _sensors.first['id'];
+      }
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _notifyChange();
     });
+  }
+
+  void _loadSensors() {
+    // Load sensors from provider
+    final sensorProvider = Provider.of<SensorProvider>(context, listen: false);
+    _sensors = sensorProvider.userSensors.map((sensor) {
+      return {'id': sensor.id, 'name': sensor.displayName};
+    }).toList();
   }
 
   void _notifyChange() {

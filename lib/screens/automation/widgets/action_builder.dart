@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/device_provider.dart';
+import '../../../widgets/device_avatar.dart';
 
 /// Widget xây dựng hành động cho quy tắc tự động
 class ActionBuilder extends StatefulWidget {
@@ -20,45 +23,169 @@ class _ActionBuilderState extends State<ActionBuilder> {
   String _device = 'pump';
   String _action = 'on';
   int _servoAngle = 90;
+  int _fanSpeed = 50;
+  String _fanMode = 'auto';
 
-  final List<Map<String, String>> _devices = [
-    {'id': 'pump', 'name': 'Máy bơm', 'type': 'relay'},
-    {'id': 'light_living', 'name': 'Đèn phòng khách', 'type': 'relay'},
-    {'id': 'light_yard', 'name': 'Đèn sân', 'type': 'relay'},
-    {'id': 'ionizer', 'name': 'Máy ion hóa', 'type': 'relay'},
-    {'id': 'roof', 'name': 'Mái che', 'type': 'servo'},
-    {'id': 'gate', 'name': 'Cổng', 'type': 'servo'},
-    {'id': 'buzzer', 'name': 'Còi', 'type': 'relay'},
-  ];
+  List<Map<String, dynamic>> _devices = [];
 
   @override
   void initState() {
     super.initState();
+    _loadDevices();
     if (widget.initialAction != null) {
       _device = widget.initialAction!['device'] ?? 'pump';
       _action = widget.initialAction!['action'] ?? 'on';
       _servoAngle = widget.initialAction!['value'] ?? 90;
+      _fanSpeed = widget.initialAction!['speed'] ?? 50;
+      _fanMode = widget.initialAction!['mode'] ?? 'auto';
     }
+
+    // Ensure selected device exists in the list
+    if (_devices.isNotEmpty) {
+      final deviceExists = _devices.any((d) => d['id'] == _device);
+      if (!deviceExists) {
+        _device = _devices.first['id'] as String;
+      }
+    }
+
     // Gọi sau khi build xong
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _notifyChange();
     });
   }
 
+  void _loadDevices() {
+    // Load devices from provider
+    final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+    _devices = deviceProvider.devices.map<Map<String, dynamic>>((device) {
+      return <String, dynamic>{
+        'id': device.id,
+        'name': device.name,
+        'type': device.type
+            .toString()
+            .split('.')
+            .last, // Convert enum to string
+        'icon': device.icon,
+        'avatarPath': device.avatarPath,
+        'isServo360':
+            device.isServo360, // For servo type: true = 360°, false = 180°
+      };
+    }).toList();
+  }
+
+  void _resetValuesForDeviceType() {
+    final selectedDevice = _devices.firstWhere(
+      (d) => d['id'] == _device,
+      orElse: () => <String, dynamic>{
+        'id': '',
+        'name': 'No device',
+        'type': 'relay',
+      },
+    );
+    final deviceType = selectedDevice['type'] as String;
+
+    switch (deviceType) {
+      case 'servo':
+        _servoAngle = 90; // Reset to center position
+        break;
+      case 'fan':
+        _fanSpeed = 50; // Reset to medium speed
+        _fanMode = 'auto'; // Reset to auto mode
+        break;
+      case 'relay':
+      default:
+        _action = 'on'; // Reset to turn on
+        break;
+    }
+  }
+
+  Widget _buildFanPresetButton(String label, int speed) {
+    final isSelected = _fanSpeed == speed;
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          _fanSpeed = speed;
+          _notifyChange();
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? Colors.red : Colors.grey[300],
+        foregroundColor: isSelected ? Colors.white : Colors.black,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
   void _notifyChange() {
-    final deviceInfo = _devices.firstWhere((d) => d['id'] == _device);
+    if (_devices.isEmpty) return; // Skip if no devices loaded
+
+    final deviceInfo = _devices.firstWhere(
+      (d) => d['id'] == _device,
+      orElse: () => <String, dynamic>{
+        'id': '',
+        'name': 'No device',
+        'type': 'relay',
+      },
+    );
+
+    // Xác định action phù hợp với loại thiết bị
+    String action = _action;
+    if (deviceInfo['type'] == 'servo') {
+      action = 'set_angle'; // Servo luôn dùng set_angle
+    } else if (deviceInfo['type'] == 'fan') {
+      action = 'set_speed'; // Fan luôn dùng set_speed
+    }
+    // Relay giữ nguyên action (turn_on/turn_off)
+
     widget.onActionChanged({
       'type': _actionType,
       'device': _device,
-      'action': _action,
+      'action': action,
       'value': deviceInfo['type'] == 'servo' ? _servoAngle : null,
+      'speed': deviceInfo['type'] == 'fan' ? _fanSpeed : null,
+      'mode': deviceInfo['type'] == 'fan' ? _fanMode : null,
     });
+  }
+
+  // Lấy góc tối đa của servo dựa trên device type
+  double _getServoMaxAngle() {
+    if (_devices.isEmpty) return 180.0;
+
+    final deviceInfo = _devices.firstWhere(
+      (d) => d['id'] == _device,
+      orElse: () => <String, dynamic>{
+        'id': '',
+        'name': 'No device',
+        'type': 'relay',
+        'isServo360': false,
+      },
+    );
+
+    // Kiểm tra nếu device có isServo360 = true thì dùng 360°, ngược lại 180°
+    return (deviceInfo['isServo360'] == true) ? 360.0 : 180.0;
   }
 
   @override
   Widget build(BuildContext context) {
-    final selectedDevice = _devices.firstWhere((d) => d['id'] == _device);
-    final isServo = selectedDevice['type'] == 'servo';
+    final selectedDevice = _devices.firstWhere(
+      (d) => d['id'] == _device,
+      orElse: () => <String, dynamic>{
+        'id': '',
+        'name': 'No device',
+        'type': 'relay',
+      },
+    );
+    final deviceType = selectedDevice['type'] as String;
+    final isServo = deviceType == 'servo';
+    final isFan = deviceType == 'fan';
 
     return Card(
       child: Padding(
@@ -81,14 +208,29 @@ class _ActionBuilderState extends State<ActionBuilder> {
                 prefixIcon: Icon(Icons.device_hub),
               ),
               items: _devices.map((device) {
-                return DropdownMenuItem(
-                  value: device['id'],
-                  child: Text(device['name']!),
+                return DropdownMenuItem<String>(
+                  value: device['id'] as String,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DeviceAvatar(
+                        icon: device['icon'] ?? '⚡',
+                        avatarPath: device['avatarPath'],
+                        size: 24,
+                        isActive:
+                            false, // Không cần active state trong dropdown
+                      ),
+                      const SizedBox(width: 8),
+                      Text(device['name'] as String),
+                    ],
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
                 setState(() {
                   _device = value!;
+                  // Reset values when device type changes
+                  _resetValuesForDeviceType();
                   _notifyChange();
                 });
               },
@@ -98,12 +240,23 @@ class _ActionBuilderState extends State<ActionBuilder> {
             // Hành động
             if (isServo) ...[
               // Servo: Slider góc
+              Row(
+                children: [
+                  const Icon(Icons.rotate_right, size: 20, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Điều khiển Servo',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text('Góc: $_servoAngle°', style: const TextStyle(fontSize: 14)),
               Slider(
                 value: _servoAngle.toDouble(),
                 min: 0,
-                max: 180,
-                divisions: 18,
+                max: _getServoMaxAngle(),
+                divisions: _getServoMaxAngle() ~/ 10,
                 label: '$_servoAngle°',
                 onChanged: (value) {
                   setState(() {
@@ -112,8 +265,101 @@ class _ActionBuilderState extends State<ActionBuilder> {
                   });
                 },
               ),
+            ] else if (isFan) ...[
+              // Fan: Avatar + Slider + Preset buttons (giống quản lý thiết bị)
+              Row(
+                children: [
+                  // Avatar giống quản lý thiết bị
+                  DeviceAvatar(
+                    icon: selectedDevice['icon'] ?? '🌪️',
+                    avatarPath: selectedDevice['avatarPath'],
+                    size: 50,
+                    isActive: _fanSpeed > 0,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          selectedDevice['name'] ?? 'Unknown Device',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$_fanSpeed°',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Slider giống quản lý thiết bị
+              Slider(
+                value: _fanSpeed.toDouble(),
+                min: 0,
+                max: 100,
+                divisions: 20,
+                label: '$_fanSpeed%',
+                activeColor: Colors.red,
+                onChanged: (value) {
+                  setState(() {
+                    _fanSpeed = value.toInt();
+                    _notifyChange();
+                  });
+                },
+              ),
+              // Labels cho slider
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tắt',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  Text(
+                    'Mạnh',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Fan preset buttons giống quản lý thiết bị
+              Row(
+                children: [
+                  Expanded(child: _buildFanPresetButton('Tắt', 0)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFanPresetButton('Nhẹ', 33)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFanPresetButton('Khá', 67)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFanPresetButton('Mạnh', 100)),
+                ],
+              ),
             ] else ...[
               // Relay: Bật/Tắt
+              Row(
+                children: [
+                  const Icon(
+                    Icons.electrical_services,
+                    size: 20,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Điều khiển Relay',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _action,
                 decoration: const InputDecoration(

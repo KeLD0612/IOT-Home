@@ -2,35 +2,37 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 
 class NotificationService {
-  final FlutterLocalNotificationsPlugin _notifications = 
+  final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
-  
+
   bool _initialized = false;
-  
+
   Future<void> init() async {
     if (_initialized) return;
-    
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    
+
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
-    
+
     try {
       await _notifications.initialize(
         initSettings,
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
-      
+
       // Request permissions
       await _requestPermissions();
-      
+
       _initialized = true;
       print('✅ NotificationService: Initialized');
     } catch (e) {
@@ -38,21 +40,24 @@ class NotificationService {
       _initialized = false;
     }
   }
-  
+
   Future<void> _requestPermissions() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       // Android notifications don't have a unified requestPermissions API in
       // flutter_local_notifications. On Android 13+ (SDK 33) the
       // POST_NOTIFICATIONS runtime permission is required. Handle that with
       // permission_handler or platform code if you need to request it.
-      print('Android platform detected — ensure POST_NOTIFICATIONS permission on Android 13+ if needed');
+      print(
+        'Android platform detected — ensure POST_NOTIFICATIONS permission on Android 13+ if needed',
+      );
     }
-    
-  if (defaultTargetPlatform == TargetPlatform.iOS) {
-    final IOSFlutterLocalNotificationsPlugin? iosPlugin =
-      _notifications.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
-      
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final IOSFlutterLocalNotificationsPlugin? iosPlugin = _notifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+
       if (iosPlugin != null) {
         try {
           final bool? granted = await iosPlugin.requestPermissions(
@@ -67,12 +72,12 @@ class NotificationService {
       }
     }
   }
-  
+
   void _onNotificationTap(NotificationResponse response) {
     print('🔔 Notification tapped: ${response.payload}');
     // Handle notification tap here
   }
-  
+
   Future<void> showNotification({
     required String title,
     required String body,
@@ -83,7 +88,7 @@ class NotificationService {
       print('⚠️ NotificationService not initialized');
       return;
     }
-    
+
     try {
       final androidDetails = AndroidNotificationDetails(
         'smart_home_channel',
@@ -95,35 +100,29 @@ class NotificationService {
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
       );
-      
+
       const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
       );
-      
+
       final details = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );
-      
+
       // Use a larger, more unique id for notifications
       final int id = DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
-      await _notifications.show(
-        id,
-        title,
-        body,
-        details,
-        payload: payload,
-      );
-      
+      await _notifications.show(id, title, body, details, payload: payload);
+
       print('🔔 Notification sent: $title');
     } catch (e) {
       print('❌ Notification Error: $e');
     }
   }
-  
+
   Importance _getAndroidImportance(NotificationPriority priority) {
     switch (priority) {
       case NotificationPriority.low:
@@ -136,7 +135,7 @@ class NotificationService {
         return Importance.max;
     }
   }
-  
+
   Priority _getAndroidPriority(NotificationPriority priority) {
     switch (priority) {
       case NotificationPriority.low:
@@ -149,7 +148,7 @@ class NotificationService {
         return Priority.max;
     }
   }
-  
+
   Future<void> showGasAlert(int gasValue) async {
     await showNotification(
       title: '⚠️ Cảnh báo Gas!',
@@ -158,7 +157,7 @@ class NotificationService {
       priority: NotificationPriority.max,
     );
   }
-  
+
   Future<void> showRainAlert() async {
     await showNotification(
       title: '🌧️ Cảnh báo mưa!',
@@ -166,7 +165,7 @@ class NotificationService {
       payload: 'rain_alert',
     );
   }
-  
+
   Future<void> showLowSoilMoistureAlert() async {
     await showNotification(
       title: '🌱 Cảnh báo độ ẩm đất',
@@ -174,15 +173,15 @@ class NotificationService {
       payload: 'soil_alert',
     );
   }
-  
+
   Future<void> showHighDustAlert(int dustValue) async {
     await showNotification(
       title: '🫁 Cảnh báo bụi mịn',
-      body: 'Nồng độ bụi cao: $dustValue. Máy ion đã bật',
+      body: 'Nồng độ bụi cao: $dustValue. Máy phun sương đã bật',
       payload: 'dust_alert',
     );
   }
-  
+
   Future<void> showMotionDetectedAlert() async {
     await showNotification(
       title: '🚶 Phát hiện chuyển động',
@@ -191,7 +190,7 @@ class NotificationService {
       priority: NotificationPriority.normal,
     );
   }
-  
+
   Future<void> cancelAll() async {
     try {
       await _notifications.cancelAll();
@@ -200,7 +199,7 @@ class NotificationService {
       print('❌ Cancel notifications error: $e');
     }
   }
-  
+
   Future<void> cancel(int id) async {
     try {
       await _notifications.cancel(id);
@@ -211,9 +210,4 @@ class NotificationService {
   }
 }
 
-enum NotificationPriority {
-  low,
-  normal,
-  high,
-  max,
-}
+enum NotificationPriority { low, normal, high, max }

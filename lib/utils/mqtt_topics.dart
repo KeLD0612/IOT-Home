@@ -17,7 +17,7 @@ class MqttTopicHelper {
   static const String pump = '$controlBase/pump';
   static const String lightLiving = '$controlBase/light_living';
   static const String lightYard = '$controlBase/light_yard';
-  static const String ionizer = '$controlBase/ionizer';
+  static const String mistMaker = '$controlBase/mist_maker';
   static const String roofServo = '$controlBase/roof_servo';
   static const String gateServo = '$controlBase/gate_servo';
 
@@ -39,7 +39,7 @@ class MqttTopicHelper {
 
   // Get all control topics for subscription
   static List<String> getAllControlTopics() {
-    return [pump, lightLiving, lightYard, ionizer, roofServo, gateServo];
+    return [pump, lightLiving, lightYard, mistMaker, roofServo, gateServo];
   }
 
   // Get all alert topics for subscription
@@ -67,8 +67,8 @@ class MqttTopicHelper {
         return lightLiving;
       case 'light_yard':
         return lightYard;
-      case 'ionizer':
-        return ionizer;
+      case 'mist_maker':
+        return mistMaker;
       case 'roof_servo':
         return roofServo;
       case 'gate_servo':
@@ -149,4 +149,15 @@ class MqttTopicHelper {
   static String getAllWildcard() {
     return '$base/#';
   }
+}
+
+// Alias for backward compatibility
+class MqttTopics {
+  static const String base = MqttTopicHelper.base;
+  static const String pump = MqttTopicHelper.pump;
+  static const String lightLiving = MqttTopicHelper.lightLiving;
+  static const String lightYard = MqttTopicHelper.lightYard;
+  static const String mistMaker = MqttTopicHelper.mistMaker;
+  static const String roofServo = MqttTopicHelper.roofServo;
+  static const String gateServo = MqttTopicHelper.gateServo;
 }

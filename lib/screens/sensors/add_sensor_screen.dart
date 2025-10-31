@@ -31,7 +31,9 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
   bool _autoGenerateCode = true;
 
   // 📡 MQTT Configuration - BẮT BUỘC cho mọi cảm biến
-  final _mqttBrokerController = TextEditingController();
+  final _mqttBrokerController = TextEditingController(
+    text: '16257efaa31f4843a11e19f83c34e594.s1.eu.hivemq.cloud',
+  );
   final _mqttPortController = TextEditingController(text: '8883');
   final _mqttUsernameController = TextEditingController(text: 'sigma');
   final _mqttPasswordController = TextEditingController(text: '35386Doan');
@@ -41,7 +43,8 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
 
   SensorType? _selectedSensorType;
   String? _selectedIcon;
-  DisplayType _displayType = DisplayType.percentage;
+  DisplayType _displayType =
+      DisplayType.boolean; // Mặc định Boolean (chỉ dùng khi cần)
   bool _isLoading = false;
 
   @override
@@ -50,6 +53,7 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
     // Auto-generate device code if checkbox is checked
     if (_autoGenerateCode) {
       _deviceCodeController.text = _generateDeviceCode();
+      _generateMqttTopic(); // 🔥 FIX: Tự động gen topic khi init
     }
   }
 
@@ -70,12 +74,12 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
   void _generateMqttTopic() {
     if (_deviceCodeController.text.isNotEmpty) {
       _mqttTopicController.text =
-          'smart_home/devices/${_deviceCodeController.text}/cmd';
+          'smart_home/sensors/${_deviceCodeController.text}/state';
     } else {
       // Auto-generate device code if not exists
       _deviceCodeController.text = _generateDeviceCode();
       _mqttTopicController.text =
-          'smart_home/devices/${_deviceCodeController.text}/cmd';
+          'smart_home/sensors/${_deviceCodeController.text}/state';
     }
   }
 
@@ -129,9 +133,11 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
             _buildMqttTopicField(),
             const SizedBox(height: 24),
 
-            // Display Configuration
-            _buildDisplayConfigSection(),
-            const SizedBox(height: 24),
+            // Display Configuration (chỉ hiển thị cho Boolean sensor)
+            if (_selectedSensorType?.dataType == SensorDataType.bool) ...[
+              _buildDisplayConfigSection(),
+              const SizedBox(height: 24),
+            ],
 
             // Sensor Type Info
             if (_selectedSensorType != null) _buildSensorInfo(),
@@ -239,19 +245,28 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
             enabled: !_autoGenerateCode,
             decoration: InputDecoration(
               labelText: 'Mã cảm biến',
-              hintText: 'Nhập mã cảm biến (6 ký tự)',
+              hintText: 'Nhập mã cảm biến (3-20 ký tự)',
               border: const OutlineInputBorder(),
               prefixIcon: const Icon(Icons.vpn_key),
               suffixIcon: _autoGenerateCode
                   ? const Icon(Icons.auto_awesome, color: Colors.blue)
                   : null,
             ),
+            onChanged: (value) {
+              // 🔥 FIX: Tự động cập nhật MQTT topic khi user sửa device code
+              setState(() {
+                if (value.trim().isNotEmpty) {
+                  _mqttTopicController.text =
+                      'smart_home/sensors/${value.trim()}/state';
+                }
+              });
+            },
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Vui lòng nhập mã cảm biến';
               }
-              if (value.length != 6) {
-                return 'Mã cảm biến phải có 6 ký tự';
+              if (value.length < 3 || value.length > 20) {
+                return 'Mã cảm biến phải từ 3-20 ký tự';
               }
               return null;
             },
@@ -268,8 +283,10 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
                   _autoGenerateCode = value ?? false;
                   if (_autoGenerateCode) {
                     _deviceCodeController.text = _generateDeviceCode();
+                    _generateMqttTopic(); // 🔥 FIX: Gen topic khi check checkbox
                   } else {
                     _deviceCodeController.text = '';
+                    _mqttTopicController.text = ''; // Clear topic khi uncheck
                   }
                 });
               },
@@ -291,8 +308,8 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
       decoration: InputDecoration(
         labelText: 'MQTT Topic',
         hintText: _deviceCodeController.text.isNotEmpty
-            ? 'smart_home/devices/${_deviceCodeController.text}/cmd'
-            : 'smart_home/devices/XXXXXX/cmd',
+            ? 'smart_home/sensors/${_deviceCodeController.text}/state'
+            : 'smart_home/sensors/XXXXXX/state',
         border: const OutlineInputBorder(),
         suffixIcon: IconButton(
           icon: const Icon(Icons.auto_fix_high),
@@ -305,7 +322,7 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
           return 'Vui lòng nhập MQTT topic';
         }
         if (!value.contains('/')) {
-          return 'Topic phải có định dạng: smart_home/devices/XXXXXX/cmd';
+          return 'Topic phải có định dạng: smart_home/sensors/XXXXXX/state';
         }
         return null;
       },
@@ -563,6 +580,54 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
                 return null;
               },
             ),
+            const SizedBox(height: 8),
+
+            // Quick select broker chips
+            Wrap(
+              spacing: 8,
+              children: [
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _mqttBrokerController.text =
+                          '16257efaa31f4843a11e19f83c34e594.s1.eu.hivemq.cloud';
+                    });
+                  },
+                  child: Chip(
+                    avatar: const Icon(
+                      Icons.cloud_circle,
+                      size: 18,
+                      color: Colors.blue,
+                    ),
+                    label: const Text(
+                      'Broker 94',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    backgroundColor: Colors.blue.shade50,
+                  ),
+                ),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _mqttBrokerController.text =
+                          '26d1fcc0724b46c495e45a93d79c78d2.s1.eu.hivemq.cloud';
+                    });
+                  },
+                  child: Chip(
+                    avatar: const Icon(
+                      Icons.cloud_circle,
+                      size: 18,
+                      color: Colors.green,
+                    ),
+                    label: const Text(
+                      'Broker 78',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    backgroundColor: Colors.green.shade50,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
 
             // Port
@@ -712,20 +777,26 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
     // Chỉ áp dụng cho cảm biến không phải tùy chỉnh
     if (sensorType.id == 'custom') return;
 
-    // Thiết lập loại hiển thị mặc định dựa trên sensor type
+    // ⚡ QUAN TRỌNG: Không set displayType mặc định!
+    // Để null → sensor sẽ hiển thị giá trị thô + unit (ví dụ: 25.5°C)
+    // User có thể tự chọn DisplayType nếu muốn custom hiển thị
+
+    // Chỉ set gợi ý cho maxValue nếu có
     switch (sensorType.dataType) {
       case SensorDataType.double:
-        // Cảm biến số thực -> Phần trăm với giá trị tối đa 100
-        _displayType = DisplayType.percentage;
-        _maxValueController.text = '100';
+        // Nếu có maxValue trong sensorType, dùng nó
+        if (sensorType.maxValue != null) {
+          _maxValueController.text = sensorType.maxValue.toString();
+        }
         break;
       case SensorDataType.int:
-        // Cảm biến số nguyên -> Xung với giá trị tối đa 1024
-        _displayType = DisplayType.pulse;
-        _maxValueController.text = '1024';
+        // Nếu có maxValue trong sensorType, dùng nó
+        if (sensorType.maxValue != null) {
+          _maxValueController.text = sensorType.maxValue.toString();
+        }
         break;
       case SensorDataType.bool:
-        // Cảm biến boolean -> Boolean với nhãn Có/Không
+        // Boolean có thể set nhãn mặc định
         _displayType = DisplayType.boolean;
         _trueLabelController.text = 'Có';
         _falseLabelController.text = 'Không';
@@ -907,33 +978,41 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
         listen: false,
       );
 
-      // Tạo DisplayConfig từ form
+      // ⚡ CHỈ tạo DisplayConfig khi sensor dataType là bool
+      // Các sensor khác (double, int) sẽ hiển thị giá trị thô + unit
       DisplayConfig? displayConfig;
-      switch (_displayType) {
-        case DisplayType.boolean:
-          displayConfig = DisplayConfig(
-            type: DisplayType.boolean,
-            trueLabel: _trueLabelController.text.trim().isNotEmpty
-                ? _trueLabelController.text.trim()
-                : null,
-            falseLabel: _falseLabelController.text.trim().isNotEmpty
-                ? _falseLabelController.text.trim()
-                : null,
-          );
-          break;
-        case DisplayType.percentage:
-          final maxValue = double.tryParse(_maxValueController.text.trim());
-          if (maxValue != null && maxValue > 0) {
-            displayConfig = DisplayConfig(
-              type: DisplayType.percentage,
-              maxValue: maxValue,
-            );
-          }
-          break;
-        case DisplayType.pulse:
-          displayConfig = DisplayConfig(type: DisplayType.pulse);
-          break;
+
+      // Chỉ tạo DisplayConfig cho Boolean type
+      if (_selectedSensorType!.dataType == SensorDataType.bool) {
+        displayConfig = DisplayConfig(
+          type: DisplayType.boolean,
+          trueLabel: _trueLabelController.text.trim().isNotEmpty
+              ? _trueLabelController.text.trim()
+              : 'Có',
+          falseLabel: _falseLabelController.text.trim().isNotEmpty
+              ? _falseLabelController.text.trim()
+              : 'Không',
+        );
       }
+      // Nếu muốn, có thể uncomment để cho phép user custom percentage/pulse
+      // else {
+      //   switch (_displayType) {
+      //     case DisplayType.percentage:
+      //       final maxValue = double.tryParse(_maxValueController.text.trim());
+      //       if (maxValue != null && maxValue > 0) {
+      //         displayConfig = DisplayConfig(
+      //           type: DisplayType.percentage,
+      //           maxValue: maxValue,
+      //         );
+      //       }
+      //       break;
+      //     case DisplayType.pulse:
+      //       displayConfig = DisplayConfig(type: DisplayType.pulse);
+      //       break;
+      //     default:
+      //       displayConfig = null;
+      //   }
+      // }
 
       // Tạo cấu hình MQTT (bắt buộc)
       final mqttConfig = DeviceMqttConfig(
@@ -950,7 +1029,7 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
         useCustomConfig: true,
         customTopic: _deviceCodeController.text.isEmpty
             ? null
-            : 'smart_home/devices/${_deviceCodeController.text}/cmd',
+            : 'smart_home/sensors/${_deviceCodeController.text}/state',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -964,14 +1043,14 @@ class _AddSensorScreenState extends State<AddSensorScreen> {
         configuration['customIcon'] = _selectedIcon;
       }
 
-      await sensorProvider.addSensor({
-        'sensorTypeId': _selectedSensorType!.id,
-        'displayName': _displayNameController.text.trim(),
-        'customMqttTopic': _mqttTopicController.text.trim(),
-        'deviceCode': _deviceCodeController.text.trim(),
-        'configuration': configuration,
-        'mqttConfig': mqttConfig,
-      });
+      await sensorProvider.addSensor(
+        sensorTypeId: _selectedSensorType!.id,
+        displayName: _displayNameController.text.trim(),
+        customMqttTopic: _mqttTopicController.text.trim(),
+        deviceCode: _deviceCodeController.text.trim(),
+        configuration: configuration,
+        mqttConfig: mqttConfig,
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

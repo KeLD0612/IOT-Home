@@ -168,7 +168,7 @@ class SceneScreen extends StatelessWidget {
         description: 'Tắt tất cả thiết bị không cần thiết',
         icon: Icons.work,
         color: Colors.orange,
-        devices: ['Đèn', 'Máy ion hóa'],
+        devices: ['Đèn', 'Máy phun sương'],
       ),
       SceneData(
         name: 'Tiệc tùng',

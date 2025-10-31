@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
-import '../config/mqtt_config.dart';
 import '../config/constants.dart';
+import '../models/mqtt_config.dart' as custom;
 
 class MqttService {
   late MqttServerClient client;
@@ -31,25 +31,24 @@ class MqttService {
     }
   }
 
-  Future<bool> connect() async {
+  Future<bool> connect(custom.MqttConfig config) async {
     try {
-      // Create client
-      client = MqttServerClient.withPort(
-        MqttConfig.broker,
-        '${MqttConfig.clientId}_${DateTime.now().millisecondsSinceEpoch}',
-        MqttConfig.port,
-      );
+      // Tạo client với unique ID
+      final uniqueId = _generateUniqueClientId();
+      client = MqttServerClient.withPort(config.broker, uniqueId, config.port);
 
       // Configure client
       client.logging(on: false);
-      client.keepAlivePeriod = MqttConfig.keepAlivePeriod;
-      client.connectTimeoutPeriod = MqttConfig.connectionTimeout * 1000;
+      client.keepAlivePeriod = 30; // 30 seconds
+      client.connectTimeoutPeriod = 10 * 1000; // 10 seconds
       client.autoReconnect = true;
       client.resubscribeOnAutoReconnect = true;
 
       // SSL/TLS
-      client.secure = true;
-      client.securityContext = SecurityContext.defaultContext;
+      client.secure = config.useSsl;
+      if (config.useSsl) {
+        client.securityContext = SecurityContext.defaultContext;
+      }
 
       // Set protocol
       client.setProtocolV311();
@@ -63,20 +62,18 @@ class MqttService {
 
       // Connection message with Last Will Testament
       final connMessage = MqttConnectMessage()
-          .authenticateAs(MqttConfig.username, MqttConfig.password)
+          .authenticateAs(config.username, config.password)
           .withWillTopic('${MqttTopics.base}/status/app_online')
           .withWillMessage('offline')
           .withWillQos(MqttQos.atLeastOnce)
           .withWillRetain()
           .startClean()
-          .keepAliveFor(MqttConfig.keepAlivePeriod);
+          .keepAliveFor(30); // 30 seconds
 
       client.connectionMessage = connMessage;
 
       // Connect
-      print(
-        '🔄 MQTT: Connecting to ${MqttConfig.broker}:${MqttConfig.port}...',
-      );
+      print('🔄 MQTT: Connecting to ${config.broker}:${config.port}...');
       await client.connect();
 
       if (client.connectionStatus?.state == MqttConnectionState.connected) {
@@ -113,16 +110,30 @@ class MqttService {
   }
 
   void subscribeToAll() {
+    print('╔═══════════════════════════════════════════════════════╗');
+    print('║  📥 SUBSCRIBING TO ALL MQTT TOPICS                    ║');
+    print('╚═══════════════════════════════════════════════════════╝');
+
     // Subscribe to all sensor topics
+    print('📡 Subscribing to: ${MqttTopics.base}/sensors/#');
     subscribe('${MqttTopics.base}/sensors/#');
 
+    // Subscribe to all device topics (for Arduino devices sending state)
+    print('📡 Subscribing to: ${MqttTopics.base}/devices/#');
+    subscribe('${MqttTopics.base}/devices/#');
+
     // Subscribe to all alert topics
+    print('📡 Subscribing to: ${MqttTopics.base}/alerts/#');
     subscribe('${MqttTopics.base}/alerts/#');
 
     // Subscribe to status topics
+    print('📡 Subscribing to: ${MqttTopics.base}/status/#');
     subscribe('${MqttTopics.base}/status/#');
 
-    print('✅ MQTT: Subscribed to all topics');
+    print(
+      '✅ MQTT: Subscribed to all topics (sensors, devices, alerts, status)',
+    );
+    print('🎧 Now listening for messages...\n');
   }
 
   void publish(String topic, String message, {bool retain = false}) {
@@ -215,6 +226,7 @@ class MqttService {
   }
 
   void _setupMessageListener() {
+    print('🎧 [MQTT] Setting up message listener...');
     client.updates!.listen(
       (List<MqttReceivedMessage<MqttMessage>> messages) {
         final recMess = messages[0].payload as MqttPublishMessage;
@@ -223,11 +235,19 @@ class MqttService {
           recMess.payload.message,
         );
 
-        // Debug log
-        print('📨 MQTT: Received [$topic]: $payload');
+        // Debug log với highlight
+        print('╔═══════════════════════════════════════════════════════╗');
+        print('║  📨 MQTT MESSAGE RECEIVED!                            ║');
+        print('╚═══════════════════════════════════════════════════════╝');
+        print('📍 Topic:   $topic');
+        print('📦 Payload: $payload');
+        print('🕐 Time:    ${DateTime.now()}');
+        print('───────────────────────────────────────────────────────');
 
         // Notify listeners
+        print('🔔 [MQTT] Calling onMessageReceived callback...');
         onMessageReceived?.call(topic, payload);
+        print('✅ [MQTT] Message forwarded to handler\n');
       },
       onError: (error) {
         print('❌ MQTT Stream Error: $error');
@@ -236,5 +256,12 @@ class MqttService {
         print('🔚 MQTT Stream Done');
       },
     );
+  }
+
+  /// Generate unique client ID
+  String _generateUniqueClientId() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final microseconds = DateTime.now().microsecond % 1000;
+    return 'flutter_smart_home_${timestamp}_$microseconds';
   }
 }
